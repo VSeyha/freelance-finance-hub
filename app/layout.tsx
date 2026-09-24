@@ -39,20 +39,37 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
-        {adsenseClientId && (
-          <Script
-            id="adsbygoogle-init"
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
+        {/* Verification Meta Tag */}
+        <meta name="google-adsense-account" content="ca-pub-7076225867058265" />
+
+
+        {/* AdSense Core Script */}
+        <Script
+          id="adsense-script"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076225867058265"
+          crossOrigin="anonymous"
+          strategy="beforeInteractive"
+        />
+        <Script
+          id="adsense-auto-inject"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var s = document.createElement('script');
+                s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076225867058265';
+                s.async = true;
+                s.crossOrigin = 'anonymous';
+                document.head.appendChild(s);
+              })();
+            `,
+          }}
+        />
+
       </head>
       <body>
         <Navbar />
