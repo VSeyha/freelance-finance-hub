@@ -21,16 +21,9 @@ export const metadata: Metadata = {
   description:
     "Free precision financial calculators for freelancers, consultants, and contractors. Calculate hourly rates, estimated quarterly taxes, project pricing, and late payment interest.",
   metadataBase: new URL("https://www.freelancefinancehubonline.online"),
-  authors: [{ name: "SoloFinance Editorial Team" }],
-  creator: "Freelance Finance Hub Online",
-  publisher: "Freelance Finance Hub Online",
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
   },
 };
 
@@ -45,8 +38,7 @@ export default function RootLayout({
         {/* Verification Meta Tag */}
         <meta name="google-adsense-account" content="ca-pub-7076225867058265" />
 
-
-        {/* AdSense Core Script */}
+        {/* AdSense Auto-Ads Script */}
         <Script
           id="adsense-script"
           async
