@@ -1,0 +1,65 @@
+.adContainer {
+  margin-block: 2.5rem; /* 40px margin ensuring 30px+ clearance */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.adLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.adBox {
+  width: 100%;
+  max-width: 728px;
+  min-height: 90px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.adBox:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.adPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.25rem;
+}
+
+.adText {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.adSubtext {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.rectangle .adBox {
+  max-width: 336px;
+  min-height: 280px;
+}
+
+.horizontal .adBox {
+  max-width: 970px;
+  min-height: 100px;
+}
