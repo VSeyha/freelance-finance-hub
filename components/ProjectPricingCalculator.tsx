@@ -161,8 +161,8 @@ Generated via SoloFinance Hub (freelance-finance-hub)`;
                 type="number"
                 min={1}
                 max={500}
-                value={hours}
-                onChange={(e) => setHours(Number(e.target.value) || 0)}
+                value={hours || ""}
+                onChange={(e) => setHours(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -197,8 +197,8 @@ Generated via SoloFinance Hub (freelance-finance-hub)`;
                 min={20}
                 max={500}
                 step={5}
-                value={rate}
-                onChange={(e) => setRate(Number(e.target.value) || 0)}
+                value={rate || ""}
+                onChange={(e) => setRate(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -233,8 +233,8 @@ Generated via SoloFinance Hub (freelance-finance-hub)`;
                 min={0}
                 max={25000}
                 step={50}
-                value={expenses}
-                onChange={(e) => setExpenses(Number(e.target.value) || 0)}
+                value={expenses || ""}
+                onChange={(e) => setExpenses(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>

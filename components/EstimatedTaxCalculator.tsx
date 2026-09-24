@@ -8,7 +8,7 @@ type FilingStatus = "single" | "married_joint" | "head_household";
 interface StateTaxOption {
   code: string;
   name: string;
-  rate: number; // estimated average effective rate
+  rate: number;
 }
 
 const STATE_OPTIONS: StateTaxOption[] = [
@@ -19,21 +19,77 @@ const STATE_OPTIONS: StateTaxOption[] = [
   { code: "VHIGH", name: "Very High State Tax (~9.5% - e.g. CA, HI)", rate: 9.3 },
 ];
 
+// 2025/2026 inflation-adjusted Standard Deductions
 const STANDARD_DEDUCTIONS: Record<FilingStatus, number> = {
-  single: 14600,
-  married_joint: 29200,
-  head_household: 21900,
+  single: 15000,
+  married_joint: 30000,
+  head_household: 22500,
 };
 
-// 2025/2026 Social Security wage base limit (approx $168,600 / $176,100)
+// 2025/2026 Social Security wage base limit ($176,100)
 const SS_WAGE_BASE_CAP = 176100;
+
+interface TaxBracket {
+  cap: number;
+  rate: number;
+}
+
+// 2025/2026 Federal Progressive Income Tax Brackets
+function calculateFederalTax(taxableIncome: number, status: FilingStatus): number {
+  if (taxableIncome <= 0) return 0;
+
+  const brackets: Record<FilingStatus, TaxBracket[]> = {
+    single: [
+      { cap: 11925, rate: 0.10 },
+      { cap: 48475, rate: 0.12 },
+      { cap: 103350, rate: 0.22 },
+      { cap: 197300, rate: 0.24 },
+      { cap: 250525, rate: 0.32 },
+      { cap: 626350, rate: 0.35 },
+      { cap: Infinity, rate: 0.37 },
+    ],
+    married_joint: [
+      { cap: 23850, rate: 0.10 },
+      { cap: 96950, rate: 0.12 },
+      { cap: 206700, rate: 0.22 },
+      { cap: 394600, rate: 0.24 },
+      { cap: 501050, rate: 0.32 },
+      { cap: 751600, rate: 0.35 },
+      { cap: Infinity, rate: 0.37 },
+    ],
+    head_household: [
+      { cap: 17000, rate: 0.10 },
+      { cap: 64850, rate: 0.12 },
+      { cap: 103350, rate: 0.22 },
+      { cap: 197300, rate: 0.24 },
+      { cap: 250500, rate: 0.32 },
+      { cap: 626350, rate: 0.35 },
+      { cap: Infinity, rate: 0.37 },
+    ],
+  };
+
+  let tax = 0;
+  let previousCap = 0;
+
+  for (const { cap, rate } of brackets[status]) {
+    if (taxableIncome > cap) {
+      tax += (cap - previousCap) * rate;
+      previousCap = cap;
+    } else {
+      tax += (taxableIncome - previousCap) * rate;
+      break;
+    }
+  }
+
+  return tax;
+}
 
 export default function EstimatedTaxCalculator() {
   const [grossRevenue, setGrossRevenue] = useState<number>(110000);
   const [businessExpenses, setBusinessExpenses] = useState<number>(20000);
   const [filingStatus, setFilingStatus] = useState<FilingStatus>("single");
   const [stateTaxRate, setStateTaxRate] = useState<number>(5.0);
-  const [w2Withholding, setW2Withholding] = useState<number>(0); // If they or spouse have W-2 job
+  const [w2Withholding, setW2Withholding] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
 
   const grossId = useId();
@@ -42,16 +98,19 @@ export default function EstimatedTaxCalculator() {
   const stateId = useId();
   const w2Id = useId();
 
-  // 1. Net Schedule C Profit
-  const netProfit = Math.max(grossRevenue - businessExpenses, 0);
+  // 1. Net Schedule C Business Profit
+  const safeGross = Math.max(grossRevenue, 0);
+  const safeExpenses = Math.max(businessExpenses, 0);
+  const netProfit = Math.max(safeGross - safeExpenses, 0);
 
-  // 2. Self-Employment Tax Calculation (Schedule SE)
-  // IRS rule: Only 92.35% of net profit is subject to SE tax
+  // 2. Self-Employment Tax (Schedule SE)
+  // IRS rule: 92.35% of net profit is subject to SE tax
   const seTaxableIncome = netProfit * 0.9235;
 
-  // Social Security: 12.4% up to cap
+  // Social Security: 12.4% up to annual cap
   const ssTax = Math.min(seTaxableIncome, SS_WAGE_BASE_CAP) * 0.124;
-  // Medicare: 2.9% on all net SE earnings + 0.9% additional for high earners (>200k single / 250k joint)
+
+  // Medicare: 2.9% on all net SE earnings + 0.9% additional Medicare above threshold
   const medicareThreshold = filingStatus === "married_joint" ? 250000 : 200000;
   const standardMedicare = seTaxableIncome * 0.029;
   const additionalMedicare =
@@ -60,66 +119,42 @@ export default function EstimatedTaxCalculator() {
 
   const totalSelfEmploymentTax = ssTax + medicareTax;
 
-  // 3. Adjusted Gross Income (AGI) & Federal Income Tax
-  // IRS allows deducting 50% of SE tax from gross income before calculating federal income tax
+  // 3. Adjusted Gross Income (AGI) & Deductions
+  // Deduct 50% of SE tax from gross income
   const seTaxDeduction = totalSelfEmploymentTax * 0.5;
 
-  // Qualified Business Income (QBI) Deduction (Section 199A): 20% of net qualified income for eligible pass-throughs
-  const qbiDeduction = netProfit > 0 ? (netProfit - seTaxDeduction) * 0.2 : 0;
-
+  // QBI Section 199A Deduction: 20% of net eligible qualified business income
+  const eligibleQbiBase = Math.max(netProfit - seTaxDeduction, 0);
   const standardDeduction = STANDARD_DEDUCTIONS[filingStatus];
-  const taxableFederalIncome = Math.max(
-    netProfit - seTaxDeduction - standardDeduction - qbiDeduction,
-    0
-  );
 
-  // Progressive Federal Tax Brackets calculation (Approximate US Brackets)
-  let federalIncomeTax = 0;
-  if (filingStatus === "married_joint") {
-    if (taxableFederalIncome > 383900) {
-      federalIncomeTax += (taxableFederalIncome - 383900) * 0.32 + 73800;
-    } else if (taxableFederalIncome > 201050) {
-      federalIncomeTax += (taxableFederalIncome - 201050) * 0.24 + 30100;
-    } else if (taxableFederalIncome > 94300) {
-      federalIncomeTax += (taxableFederalIncome - 94300) * 0.22 + 10600;
-    } else if (taxableFederalIncome > 23200) {
-      federalIncomeTax += (taxableFederalIncome - 23200) * 0.12 + 2320;
-    } else {
-      federalIncomeTax += taxableFederalIncome * 0.1;
-    }
-  } else {
-    // Single / Head of Household
-    if (taxableFederalIncome > 191950) {
-      federalIncomeTax += (taxableFederalIncome - 191950) * 0.32 + 37100;
-    } else if (taxableFederalIncome > 100525) {
-      federalIncomeTax += (taxableFederalIncome - 100525) * 0.24 + 15200;
-    } else if (taxableFederalIncome > 47150) {
-      federalIncomeTax += (taxableFederalIncome - 47150) * 0.22 + 5400;
-    } else if (taxableFederalIncome > 11600) {
-      federalIncomeTax += (taxableFederalIncome - 11600) * 0.12 + 1160;
-    } else {
-      federalIncomeTax += taxableFederalIncome * 0.1;
-    }
-  }
+  // Taxable Federal Income before QBI deduction
+  const taxableBeforeQbi = Math.max(eligibleQbiBase - standardDeduction, 0);
+  const qbiDeduction = Math.min(eligibleQbiBase * 0.20, taxableBeforeQbi);
 
-  // 4. State Income Tax
-  const estimatedStateTax = Math.max(netProfit - standardDeduction * 0.5, 0) * (stateTaxRate / 100);
+  const taxableFederalIncome = Math.max(taxableBeforeQbi - qbiDeduction, 0);
 
-  // 5. Total Estimated Annual Liability
+  // 4. Exact Progressive Federal Income Tax
+  const federalIncomeTax = calculateFederalTax(taxableFederalIncome, filingStatus);
+
+  // 5. State Income Tax (applied to state taxable base)
+  const stateTaxableBase = Math.max(netProfit - (standardDeduction * 0.5), 0);
+  const estimatedStateTax = stateTaxableBase * (Math.max(stateTaxRate, 0) / 100);
+
+  // 6. Total Annual Tax Liability after existing W-2 withholdings
   const totalAnnualTaxLiability = Math.max(
-    totalSelfEmploymentTax + federalIncomeTax + estimatedStateTax - w2Withholding,
+    totalSelfEmploymentTax + federalIncomeTax + estimatedStateTax - Math.max(w2Withholding, 0),
     0
   );
 
-  // 6. Quarterly Payment (Divide by 4)
+  // 7. Quarterly Payment (Divide by 4)
   const quarterlyEstimatedPayment = totalAnnualTaxLiability / 4;
 
-  // Effective Tax Rate
+  // Effective Tax Rate on Net Profit
   const effectiveTaxRate = netProfit > 0 ? (totalAnnualTaxLiability / netProfit) * 100 : 0;
 
-  // Recommended Savings Percentage per invoice (taxes / gross revenue)
+  // Recommended Savings Percentage per invoice (tax liability / gross revenue)
   const invoiceTaxReservePct =
-    grossRevenue > 0 ? Math.ceil((totalAnnualTaxLiability / grossRevenue) * 100) : 25;
+    safeGross > 0 ? Math.min(Math.ceil((totalAnnualTaxLiability / safeGross) * 100), 50) : 25;
 
   const handleCopy = async () => {
     const text = `--- SoloFinance Quarterly Estimated Tax Voucher ---
@@ -144,10 +179,10 @@ Generated via SoloFinance Hub (IRS Form 1040-ES Guidelines)`;
       <div className={styles.widgetHeader}>
         <div className={styles.badgeRow}>
           <span className={styles.taxBadge}>IRS FORM 1040-ES COMPLIANT</span>
-          <span className={styles.yearBadge}>Tax Year 2025–2026</span>
+          <span className={styles.yearBadge}>Tax Year 2025–2026 Brackets</span>
         </div>
         <p className={styles.headerNote}>
-          Calculates both employer + employee FICA (15.3%) and progressive income tax.
+          Calculates FICA Self-Employment (15.3%), QBI Section 199A deduction, and progressive brackets.
         </p>
       </div>
 
@@ -171,8 +206,8 @@ Generated via SoloFinance Hub (IRS Form 1040-ES Guidelines)`;
                 min={0}
                 max={1000000}
                 step={2500}
-                value={grossRevenue}
-                onChange={(e) => setGrossRevenue(Number(e.target.value) || 0)}
+                value={grossRevenue || ""}
+                onChange={(e) => setGrossRevenue(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -205,8 +240,8 @@ Generated via SoloFinance Hub (IRS Form 1040-ES Guidelines)`;
                 min={0}
                 max={200000}
                 step={1000}
-                value={businessExpenses}
-                onChange={(e) => setBusinessExpenses(Number(e.target.value) || 0)}
+                value={businessExpenses || ""}
+                onChange={(e) => setBusinessExpenses(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -235,12 +270,12 @@ Generated via SoloFinance Hub (IRS Form 1040-ES Guidelines)`;
               onChange={(e) => setFilingStatus(e.target.value as FilingStatus)}
               className={styles.selectInput}
             >
-              <option value="single">Single ($14,600 standard deduction)</option>
+              <option value="single">Single ($15,000 standard deduction)</option>
               <option value="married_joint">
-                Married Filing Jointly ($29,200 standard deduction)
+                Married Filing Jointly ($30,000 standard deduction)
               </option>
               <option value="head_household">
-                Head of Household ($21,900 standard deduction)
+                Head of Household ($22,500 standard deduction)
               </option>
             </select>
           </div>
@@ -288,8 +323,8 @@ Generated via SoloFinance Hub (IRS Form 1040-ES Guidelines)`;
                 min={0}
                 max={100000}
                 step={500}
-                value={w2Withholding}
-                onChange={(e) => setW2Withholding(Number(e.target.value) || 0)}
+                value={w2Withholding || ""}
+                onChange={(e) => setW2Withholding(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -340,7 +375,7 @@ Generated via SoloFinance Hub (IRS Form 1040-ES Guidelines)`;
                   <span className={`${styles.itemDot} ${styles.dotBlue}`} />
                   <div>
                     <span className={styles.itemTitle}>Federal Income Tax</span>
-                    <span className={styles.itemSubtitle}>After standard & QBI deductions</span>
+                    <span className={styles.itemSubtitle}>After Standard & 20% QBI deductions</span>
                   </div>
                 </div>
                 <span className={styles.itemVal}>

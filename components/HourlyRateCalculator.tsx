@@ -199,11 +199,11 @@ Calculated via SoloFinance Hub (freelance-finance-hub)`;
                 id={takeHomeId}
                 type="number"
                 inputMode="numeric"
-                min={10000}
-                max={500000}
+                min={0}
+                max={1000000}
                 step={1000}
-                value={takeHome}
-                onChange={(e) => setTakeHome(Number(e.target.value) || 0)}
+                value={takeHome || ""}
+                onChange={(e) => setTakeHome(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -237,10 +237,10 @@ Calculated via SoloFinance Hub (freelance-finance-hub)`;
                 type="number"
                 inputMode="numeric"
                 min={0}
-                max={150000}
+                max={200000}
                 step={500}
-                value={expenses}
-                onChange={(e) => setExpenses(Number(e.target.value) || 0)}
+                value={expenses || ""}
+                onChange={(e) => setExpenses(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>

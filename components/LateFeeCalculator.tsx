@@ -112,8 +112,8 @@ Calculated via SoloFinance Hub (freelance-finance-hub)`;
                 min={1}
                 max={500000}
                 step={100}
-                value={invoiceAmount}
-                onChange={(e) => setInvoiceAmount(Number(e.target.value) || 0)}
+                value={invoiceAmount || ""}
+                onChange={(e) => setInvoiceAmount(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -147,8 +147,8 @@ Calculated via SoloFinance Hub (freelance-finance-hub)`;
                 type="number"
                 min={1}
                 max={365}
-                value={daysPastDue}
-                onChange={(e) => setDaysPastDue(Number(e.target.value) || 0)}
+                value={daysPastDue || ""}
+                onChange={(e) => setDaysPastDue(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
@@ -211,8 +211,8 @@ Calculated via SoloFinance Hub (freelance-finance-hub)`;
                 min={0}
                 max={500}
                 step={10}
-                value={flatLateFee}
-                onChange={(e) => setFlatLateFee(Number(e.target.value) || 0)}
+                value={flatLateFee === 0 ? "" : flatLateFee}
+                onChange={(e) => setFlatLateFee(e.target.value === "" ? 0 : Number(e.target.value))}
                 className={styles.numInput}
               />
             </div>
