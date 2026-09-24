@@ -4,4 +4,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://solofinancehub.com/sitemap.xml
+Sitemap: https://www.freelancefinancehubonline.online/sitemap.xml
