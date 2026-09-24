@@ -54,21 +54,6 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="beforeInteractive"
         />
-        <Script
-          id="adsense-auto-inject"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var s = document.createElement('script');
-                s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076225867058265';
-                s.async = true;
-                s.crossOrigin = 'anonymous';
-                document.head.appendChild(s);
-              })();
-            `,
-          }}
-        />
 
       </head>
       <body>
