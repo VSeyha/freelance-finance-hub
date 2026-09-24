@@ -17,13 +17,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SoloFinance Hub - Financial Engineering Tools for Independent Professionals",
+  title: "Freelance Finance Hub Online - Financial Engineering Tools for Independent Professionals",
   description:
     "Free precision financial calculators for freelancers, consultants, and contractors. Calculate hourly rates, estimated quarterly taxes, project pricing, and late payment interest.",
-  metadataBase: new URL("https://solofinancehub.com"),
+  metadataBase: new URL("https://www.freelancefinancehubonline.online"),
   authors: [{ name: "SoloFinance Editorial Team" }],
-  creator: "SoloFinance Hub",
-  publisher: "SoloFinance Hub",
+  creator: "Freelance Finance Hub Online",
+  publisher: "Freelance Finance Hub Online",
   robots: {
     index: true,
     follow: true,
