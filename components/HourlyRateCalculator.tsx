@@ -48,6 +48,7 @@ const CURRENCIES = [
 ];
 
 export default function HourlyRateCalculator() {
+  const [activePreset, setActivePreset] = useState<string | null>("established");
   const [currency, setCurrency] = useState("$");
   const [takeHome, setTakeHome] = useState<number>(85000);
   const [expenses, setExpenses] = useState<number>(14000);
@@ -94,6 +95,7 @@ export default function HourlyRateCalculator() {
   const expensePct = (expenses / grossNeeded) * 100;
 
   const applyPreset = (key: keyof typeof PRESETS) => {
+    setActivePreset(key);
     const p = PRESETS[key];
     setTakeHome(p.takeHome);
     setExpenses(p.expenses);
@@ -134,22 +136,25 @@ Calculated via SoloFinance Hub (freelance-finance-hub)`;
           <div className={styles.presetButtons}>
             <button
               type="button"
-              className={styles.presetBtn}
+              className={`${styles.presetBtn} ${activePreset === "starter" ? styles.presetBtnActive : ""}`}
               onClick={() => applyPreset("starter")}
+              aria-pressed={activePreset === "starter"}
             >
               🌱 Starter
             </button>
             <button
               type="button"
-              className={`${styles.presetBtn} ${styles.presetBtnActive}`}
+              className={`${styles.presetBtn} ${activePreset === "established" ? styles.presetBtnActive : ""}`}
               onClick={() => applyPreset("established")}
+              aria-pressed={activePreset === "established"}
             >
               💼 Established
             </button>
             <button
               type="button"
-              className={styles.presetBtn}
+              className={`${styles.presetBtn} ${activePreset === "consultant" ? styles.presetBtnActive : ""}`}
               onClick={() => applyPreset("consultant")}
+              aria-pressed={activePreset === "consultant"}
             >
               🚀 Senior Pro
             </button>

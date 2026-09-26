@@ -40,6 +40,7 @@ const PRESETS: Record<string, ProjectPreset> = {
 };
 
 export default function ProjectPricingCalculator() {
+  const [activePreset, setActivePreset] = useState<string | null>("standard");
   const [hours, setHours] = useState<number>(60);
   const [rate, setRate] = useState<number>(110);
   const [expenses, setExpenses] = useState<number>(450);
@@ -82,6 +83,7 @@ export default function ProjectPricingCalculator() {
   const milestoneFinal = recommendedFixedFee * 0.25;
 
   const applyPreset = (key: keyof typeof PRESETS) => {
+    setActivePreset(key);
     const p = PRESETS[key];
     setHours(p.hours);
     setRate(p.rate);
@@ -122,17 +124,28 @@ Generated via SoloFinance Hub (freelance-finance-hub)`;
         <div className={styles.presetsGroup}>
           <span className={styles.presetLabel}>Deliverable Presets:</span>
           <div className={styles.presetButtons}>
-            <button type="button" className={styles.presetBtn} onClick={() => applyPreset("quick")}>
+            <button
+              type="button"
+              className={`${styles.presetBtn} ${activePreset === "quick" ? styles.presetBtnActive : ""}`}
+              onClick={() => applyPreset("quick")}
+              aria-pressed={activePreset === "quick"}
+            >
               ⚡ Sprint
             </button>
             <button
               type="button"
-              className={`${styles.presetBtn} ${styles.presetBtnActive}`}
+              className={`${styles.presetBtn} ${activePreset === "standard" ? styles.presetBtnActive : ""}`}
               onClick={() => applyPreset("standard")}
+              aria-pressed={activePreset === "standard"}
             >
               📦 Standard
             </button>
-            <button type="button" className={styles.presetBtn} onClick={() => applyPreset("enterprise")}>
+            <button
+              type="button"
+              className={`${styles.presetBtn} ${activePreset === "enterprise" ? styles.presetBtnActive : ""}`}
+              onClick={() => applyPreset("enterprise")}
+              aria-pressed={activePreset === "enterprise"}
+            >
               🏢 Enterprise
             </button>
           </div>
